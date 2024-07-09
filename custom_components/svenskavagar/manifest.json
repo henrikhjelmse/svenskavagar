@@ -1,0 +1,10 @@
+{
+    "domain": "trafik_olyckor",
+    "name": "sr TraffikInfo",
+    "documentation": "https://github.com/henrikhjelmse/svenskavagar/",
+    "requirements": [],
+    "dependencies": [],
+    "codeowners": [],
+    "version": "1.0.0",
+    "config_flow": true
+}
