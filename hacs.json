@@ -1,5 +1,5 @@
 {
-    "name": "sr TraffikInfo",
+    "name": "SR TraffikInfo",
     "country": "SE",
     "homeassistant": "2024.1.0",
     "render_readme": true
