@@ -38,7 +38,9 @@ class RoadSensor(SensorEntity):
         self._weeks_active = weeks_active
         self._attr_name = road['title']
         self._attr_unique_id = str(road['id'])
-        self._state = road['description']
+        title = road['title']
+        description = road['description']
+        self._state = f"Title: {title}\nDescription: {description}"
         self._attr_icon = "mdi:alert"
 
     @property
@@ -46,7 +48,7 @@ class RoadSensor(SensorEntity):
         return {
             "priority": self._road['priority'],
             "createddate": self._road['createddate'],
-            "exactlocation": self._road['exactlocation'],
+            "description": self._road['description']
             "latitude": self._road['latitude'],
             "longitude": self._road['longitude'],
             "category": self._road['category'],
