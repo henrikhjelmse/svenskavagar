@@ -48,7 +48,7 @@ class RoadSensor(SensorEntity):
         return {
             "priority": self._road['priority'],
             "createddate": self._road['createddate'],
-            "description": self._road['description']
+            "description": self._road['description'],  # Added missing comma here
             "latitude": self._road['latitude'],
             "longitude": self._road['longitude'],
             "category": self._road['category'],
