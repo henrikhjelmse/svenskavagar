@@ -40,7 +40,8 @@ class RoadSensor(SensorEntity):
         self._attr_unique_id = str(road['id'])
         title = road['title']
         description = road['description']
-        self._state = f"Title: {title}\nDescription: {description}"
+        created_date = road['createddate']
+        self._state = f"Title: {title}\nDescription: {description}\nCreated: {created_date}"
         self._attr_icon = "mdi:alert"
 
     @property
@@ -73,7 +74,7 @@ class RoadSensor(SensorEntity):
         for r in road_data:
             if r['id'] == self._road['id']:
                 self._road = r
-                self._state = r['description']
+                self._state = f"Title: {r['title']}\nDescription: {r['description']}\nCreated: {r['createddate']}"
                 break
         else:
             # Road is no longer available
