@@ -46,7 +46,9 @@ class SvenskaVagarConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             "type_info": "Välj typ av olycka:",  # Ändra även här
             vol.Required(CONF_TYPE, default="Visa alla"): vol.In(types_list),
             "weeks_info": "Välj hur många veckor sensorn ska vara aktiv:",  # Och sist
-            vol.Required("weeks_active", default=1): vol.In([1, 2, 3, 4])
+            vol.Required("weeks_active", default=1): vol.In([1, 2, 3, 4]),
+            "active_info": "Visa endast aktiva händelser:",
+            vol.Required("show_only_active", default=True): bool,
         })
 
         return self.async_show_form(

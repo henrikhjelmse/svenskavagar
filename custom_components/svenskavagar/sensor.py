@@ -14,22 +14,35 @@ async def async_setup_entry(hass, entry, async_add_entities):
     radius = entry.data[CONF_RADIUS]
     type_selection = entry.data[CONF_TYPE]
     weeks_active = entry.data["weeks_active"]
+    show_only_active = entry.data.get("show_only_active", True)
 
     road_data = await hass.async_add_executor_job(
-        fetch_road_data, latitude, longitude, radius, type_selection
+        fetch_road_data, 
+        latitude, 
+        longitude, 
+        radius, 
+        type_selection,
+        show_only_active
     )
+    
     sensors = [RoadSensor(road, entry.data, weeks_active) for road in road_data]
-
     async_add_entities(sensors, True)
 
-def fetch_road_data(latitude, longitude, radius, type_selection):
+def fetch_road_data(latitude, longitude, radius, type_selection, show_only_active=True):
     url = f"https://henrikhjelm.se/api/vagar.php?lat={latitude}&long={longitude}&radius={radius}"
     response = requests.get(url)
     data = response.json()
-    if type_selection == "Visa alla":
-        return data.get('road', [])
-    else:
-        return [road for road in data.get('road', []) if road['subcategory'] == type_selection]
+    roads = data.get('road', [])
+    
+    # Filter active status if needed
+    if show_only_active:
+        roads = [road for road in roads if road.get('aktiv', False)]
+    
+    # Filter by type if needed
+    if type_selection != "Visa alla":
+        roads = [road for road in roads if road['subcategory'] == type_selection]
+    
+    return roads
 
 class RoadSensor(SensorEntity):
     def __init__(self, road, config, weeks_active):
@@ -73,12 +86,17 @@ class RoadSensor(SensorEntity):
         road_data = fetch_road_data(
             self._road['latitude'],
             self._road['longitude'],
-            self._config[CONF_RADIUS],  # Use configured radius
-            self._config[CONF_TYPE]
+            self._config[CONF_RADIUS],
+            self._config[CONF_TYPE],
+            self._config.get("show_only_active", True)
         )
+        
         # Update state with new data if available
         for r in road_data:
             if r['id'] == self._road['id']:
+                if not r.get('aktiv', False) and self._config.get("show_only_active", True):
+                    self.hass.async_create_task(self.async_remove())
+                    return
                 self._road = r
                 self._update_state()
                 break
