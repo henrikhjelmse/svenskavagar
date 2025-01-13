@@ -38,18 +38,24 @@ class RoadSensor(SensorEntity):
         self._weeks_active = weeks_active
         self._attr_name = road['title']
         self._attr_unique_id = str(road['id'])
-        title = road['title']
-        description = road['description']
-        created_date = road['createddate']
-        self._state = f"Title: {title}\nDescription: {description}\nCreated: {created_date}"
         self._attr_icon = "mdi:alert"
+        self._update_state()
+
+    def _update_state(self):
+        # Set only the creation date as the state
+        self._state = self._road['createddate']
+
+    @property
+    def state(self):
+        """Return the state of the sensor."""
+        return self._state
 
     @property
     def extra_state_attributes(self):
         return {
             "priority": self._road['priority'],
             "createddate": self._road['createddate'],
-            "description": self._road['description'],  # Added missing comma here
+            "description": self._road['description'],
             "latitude": self._road['latitude'],
             "longitude": self._road['longitude'],
             "category": self._road['category'],
@@ -74,7 +80,7 @@ class RoadSensor(SensorEntity):
         for r in road_data:
             if r['id'] == self._road['id']:
                 self._road = r
-                self._state = f"Title: {r['title']}\nDescription: {r['description']}\nCreated: {r['createddate']}"
+                self._update_state()
                 break
         else:
             # Road is no longer available
