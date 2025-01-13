@@ -1,6 +1,6 @@
 import voluptuous as vol
 from homeassistant import config_entries
-from homeassistant.const import CONF_LATITUDE, CONF_LONGITUDE, CONF_RADIUS, CONF_TYPE
+from homeassistant.const import CONF_LATITUDE, CONF_LONGITUDE, CONF_RADIUS, CONF_TYPE, CONF_SCAN_INTERVAL
 from .const import DOMAIN
 import homeassistant.helpers.config_validation as cv
 import aiohttp
@@ -35,6 +35,14 @@ class SvenskaVagarConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         types_list = [t[0] for t in types] if types else []
         types_list.append("Visa alla")
 
+        activity_choices = {
+            "show_only_active": "Visa endast aktiva händelser",
+            "week_1": "Visa händelser från senaste veckan",
+            "week_2": "Visa händelser från senaste 2 veckorna",
+            "week_3": "Visa händelser från senaste 3 veckorna",
+            "week_4": "Visa händelser från senaste 4 veckorna"
+        }
+
         # Define the schema
         schema = vol.Schema({
             "latitude_info": "Ange latitud:",  # Lägg till en textsträng här
@@ -45,10 +53,12 @@ class SvenskaVagarConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Required(CONF_RADIUS, default="40"): cv.positive_int,
             "type_info": "Välj typ av olycka:",  # Ändra även här
             vol.Required(CONF_TYPE, default="Visa alla"): vol.In(types_list),
-            "weeks_info": "Välj hur många veckor sensorn ska vara aktiv:",  # Och sist
-            vol.Required("weeks_active", default=1): vol.In([1, 2, 3, 4]),
-            "active_info": "Visa endast aktiva händelser:",
-            vol.Required("show_only_active", default=True): bool,
+            "activity_info": "Välj tidsperiod för händelser:",
+            vol.Required("activity_option", default="show_only_active"): vol.In(activity_choices),
+            "update_info": "Uppdateringsintervall (minuter):",
+            vol.Required(CONF_SCAN_INTERVAL, default=5): vol.All(
+                vol.Coerce(int), vol.Range(min=5, max=60)
+            )
         })
 
         return self.async_show_form(

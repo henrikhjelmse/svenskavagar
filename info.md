@@ -10,4 +10,4 @@ För att lägga till sensorer går du till **Integrationer/Dashboard** i din app
 
 ## Nyheter
 En ny funktionalitet är tillagd:  
-- **Active**  visar nu status för händelser — om de är aktiva (pågående) eller inaktiva. detta ställer du in i config flow.
+- Bättre inställningar för hur länge dom ska visas.
