@@ -10,4 +10,7 @@ För att lägga till sensorer går du till **Integrationer/Dashboard** i din app
 
 ## Nyheter
 En ny funktionalitet är tillagd:  
-- Bättre inställningar för hur länge dom ska visas.
+- Tog bort weeks, så nu visas bara dom aktiva sakerna istället. 
+
+## framtida inställningar 
+vet ej. kom med förslag. 

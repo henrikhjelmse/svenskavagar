@@ -3,8 +3,6 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.typing import ConfigType
 from .const import DOMAIN
 
-DOMAIN = "trafik_olyckor"
-
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     return True
 
