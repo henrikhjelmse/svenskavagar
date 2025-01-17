@@ -37,7 +37,7 @@ class RoadSensor(SensorEntity):
         self._road = road
         self._config = config
         self._attr_name = road['title']
-        self._attr_unique_id = str(road['id'])
+        self._attr_unique_id = f"sensor.trafik_{road['id']}"  # Prefix with sensor.trafik
         self._state = road['createddate']  # Changed from description to createddate
         self._attr_icon = "mdi:alert"
         self._activity_option = config["activity_option"]
