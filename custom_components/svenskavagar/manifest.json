@@ -1,6 +1,6 @@
 {
-    "domain": "trafik_olyckor",
-    "name": "SR TraffikInfo",
+    "domain": "svenskavagar",
+    "name": "Svenska Vägar",
     "documentation": "https://github.com/henrikhjelmse/svenskavagar/",
     "requirements": [],
     "dependencies": [],

@@ -45,17 +45,11 @@ class SvenskaVagarConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         # Define the schema
         schema = vol.Schema({
-            "latitude_info": "Ange latitud:",  # Lägg till en textsträng här
             vol.Required(CONF_LATITUDE, default=default_latitude): cv.string,
-            "longitude_info": "Ange longitud:",  # Och här
             vol.Required(CONF_LONGITUDE, default=default_longitude): cv.string,
-            "radius_info": "Ange radie (i km):",  # Och här
             vol.Required(CONF_RADIUS, default="40"): cv.positive_int,
-            "type_info": "Välj typ av olycka:",  # Ändra även här
             vol.Required(CONF_TYPE, default="Visa alla"): vol.In(types_list),
-            "activity_info": "Välj tidsperiod för händelser:",
             vol.Required("activity_option", default="show_only_active"): vol.In(activity_choices),
-            "update_info": "Uppdateringsintervall (minuter):",
             vol.Required(CONF_SCAN_INTERVAL, default=5): vol.All(
                 vol.Coerce(int), vol.Range(min=5, max=60)
             )
