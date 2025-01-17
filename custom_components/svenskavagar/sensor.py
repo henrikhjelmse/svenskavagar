@@ -1,7 +1,7 @@
 import logging
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.const import CONF_LATITUDE, CONF_LONGITUDE, CONF_RADIUS, CONF_TYPE, CONF_SCAN_INTERVAL
-from .const import DOMAIN, CONF_PREFIX
+from .const import DOMAIN
 import requests
 from datetime import datetime, timedelta
 
@@ -9,66 +9,38 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up sensors based on a config entry."""
-    try:
-        latitude = entry.data[CONF_LATITUDE]
-        longitude = entry.data[CONF_LONGITUDE]
-        radius = entry.data[CONF_RADIUS]
-        type_selection = entry.data[CONF_TYPE]
-        scan_interval = entry.data[CONF_SCAN_INTERVAL]
+    latitude = entry.data[CONF_LATITUDE]
+    longitude = entry.data[CONF_LONGITUDE]
+    radius = entry.data[CONF_RADIUS]
+    type_selection = entry.data[CONF_TYPE]
+    activity_option = entry.data["activity_option"]
+    scan_interval = entry.data[CONF_SCAN_INTERVAL]
 
-        _LOGGER.debug(f"Setting up sensor with lat:{latitude}, long:{longitude}, radius:{radius}")
-        
-        road_data = await hass.async_add_executor_job(
-            fetch_road_data, latitude, longitude, radius, type_selection
-        )
-        
-        if not road_data:
-            _LOGGER.warning("No road data received from API")
-            return
-            
-        sensors = [RoadSensor(road, entry.data) for road in road_data]
-        _LOGGER.debug(f"Created {len(sensors)} sensors")
-        
-        async_add_entities(sensors, True)
-        return True
-        
-    except Exception as ex:
-        _LOGGER.error(f"Error setting up sensor: {ex}")
-        return False
+    road_data = await hass.async_add_executor_job(
+        fetch_road_data, latitude, longitude, radius, type_selection
+    )
+    sensors = [RoadSensor(road, entry.data) for road in road_data]
+
+    async_add_entities(sensors, True)
 
 def fetch_road_data(latitude, longitude, radius, type_selection):
-    try:
-        url = f"https://henrikhjelm.se/api/vagar.php?lat={latitude}&long={longitude}&radius={radius}"
-        _LOGGER.debug(f"Fetching data from: {url}")
-        response = requests.get(url, timeout=10)
-        response.raise_for_status()
-        data = response.json()
-        roads = data.get('road', [])
-        
-        # Filter out inactive roads if they exist in the API response
-        active_roads = [road for road in roads if road.get('active', True)]
-        _LOGGER.debug(f"Found {len(active_roads)} active roads")
-        
-        if type_selection == "Visa alla":
-            return active_roads
-        
-        filtered_roads = [road for road in active_roads if road['subcategory'] == type_selection]
-        _LOGGER.debug(f"Filtered to {len(filtered_roads)} roads of type {type_selection}")
-        return filtered_roads
-        
-    except Exception as ex:
-        _LOGGER.error(f"Error fetching road data: {ex}")
-        return []
+    url = f"https://henrikhjelm.se/api/vagar.php?lat={latitude}&long={longitude}&radius={radius}"
+    response = requests.get(url)
+    data = response.json()
+    if type_selection == "Visa alla":
+        return data.get('road', [])
+    else:
+        return [road for road in data.get('road', []) if road['subcategory'] == type_selection]
 
 class RoadSensor(SensorEntity):
     def __init__(self, road, config):
         self._road = road
         self._config = config
-        prefix = config.get(CONF_PREFIX, "")
-        self._attr_name = f"{prefix} {road['title']}" if prefix else road['title']
+        self._attr_name = road['title']
         self._attr_unique_id = str(road['id'])
-        self._state = road['createddate']
+        self._state = road['createddate']  # Changed from description to createddate
         self._attr_icon = "mdi:alert"
+        self._activity_option = config["activity_option"]
         self._scan_interval = timedelta(minutes=config[CONF_SCAN_INTERVAL])
         self._last_update = datetime.now()
 
@@ -80,7 +52,7 @@ class RoadSensor(SensorEntity):
     @property
     def extra_state_attributes(self):
         return {
-            "description": self._road['description'],
+            "description": self._road['description'],  # Added description to attributes
             "priority": self._road['priority'],
             "createddate": self._road['createddate'],
             "exactlocation": self._road['exactlocation'],
@@ -90,44 +62,43 @@ class RoadSensor(SensorEntity):
             "subcategory": self._road['subcategory'],
         }
 
-    async def async_update(self):
-        """Async update method."""
+    def update(self):
         current_time = datetime.now()
         
+        # Check if it's time to update based on scan_interval
         if current_time - self._last_update < self._scan_interval:
             return
 
         self._last_update = current_time
-        
-        road_data = await self.hass.async_add_executor_job(
-            fetch_road_data,
+        created_date = datetime.strptime(self._road['createddate'], '%Y-%m-%d %H:%M:%S')
+
+        # Handle activity filtering
+        if self._activity_option == "show_only_active":
+            if not self._road.get('active', True):  # If road is not active
+                self.hass.async_create_task(self.async_remove())
+                return
+        else:
+            weeks = int(self._activity_option.split('_')[1])  # Extract number from 'week_X'
+            if current_time - created_date > timedelta(weeks=weeks):
+                self.hass.async_create_task(self.async_remove())
+                return
+
+        # Fetch the latest data
+        road_data = fetch_road_data(
             self._road['latitude'],
             self._road['longitude'],
-            self._config[CONF_RADIUS],
+            self._config[CONF_RADIUS],  # Use configured radius
             self._config[CONF_TYPE]
         )
-
-        # Check if the road still exists and is active
-        road_still_exists = False
+        # Update state with new data if available
         for r in road_data:
             if r['id'] == self._road['id']:
-                if r.get('active', True) is False:  # Check if road became inactive
-                    _LOGGER.debug(f"Road {self._attr_name} became inactive")
-                    await self.async_remove()
-                    return
-                road_still_exists = True
                 self._road = r
-                self._state = r['createddate']
+                self._state = r['createddate']  # Changed from description to createddate
                 break
-
-        if not road_still_exists:
-            _LOGGER.debug(f"Road {self._attr_name} is no longer available")
-            await self.async_remove()
-            return
-
-    def update(self):
-        """Legacy update method - not used."""
-        return
+        else:
+            # Road is no longer available
+            self.hass.async_create_task(self.async_remove())
 
     async def async_remove(self):
         """Remove entity."""
